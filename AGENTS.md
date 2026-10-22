@@ -13,7 +13,7 @@ Rules for any agent working in this repository, regardless of harness or model. 
 ## About this repository
 
 - Dockerfiles and supporting assets for headless agent images. Shared image name: **`agent-base`**; an organization/registry prefix is separate.
-- The base lives under `images/base/`; planner, coder and reviewer each have a Dockerfile and recipe under `images/<role>/`. All builds use the repository root as context.
+- The base lives under `images/base/`; planner, coder and reviewer each have a Dockerfile, `recipe.yaml`, `instructions.md` and `prompt.md` under `images/<role>/`. Goose resolves the Markdown includes relative to the recipe. All builds use the repository root as context.
 - Role images inherit the base and differ in recipes and labels, with shared skills initially inherited unchanged. Distinct baked skills and additional roles require a scoped request; do not invent their contents. Contracts and verification limits live in `docs/role-images.md`.
 - Cloud runtime: Goose calls model providers; no Claude Code, Codex CLI or ACP adapters added to the base.
 - Provider/model selection comes from runtime environment variables. No baked provider/model defaults or interactive configuration.

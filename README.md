@@ -3,7 +3,7 @@
 Images for headless Goose agents in the [AI-native SDLC platform](https://github.com/julie-ng/ai-native-sdlc). Contributors: read [AGENTS.md](AGENTS.md).
 
 - **Image:** `agent-base`; registry/organization prefix and publishing workflow remain to be chosen.
-- **Role images:** `agent-planner`, `agent-coder`, `agent-reviewer`; each inherits the base and adds its own Goose recipe and labels. [Builds, contracts and checks](docs/role-images.md).
+- **Role images:** `agent-planner`, `agent-coder`, `agent-reviewer`; each inherits the base and adds its own Goose recipe and labels. Role instructions and task prompts live in separate Markdown files alongside the recipe configuration. [Builds, contracts and checks](docs/role-images.md).
 - **Base:** official Goose on Debian 12. [ADR-001](architecture/decisions/001-agent-base-image.md) records the choice and historical size comparison.
 - **Target:** `linux/amd64`; development hosts may be ARM64.
 - **Runtime:** `goose`, UID/GID 1000; home `/home/goose`; working directory `/workspace`; no usable sudo.
@@ -63,6 +63,7 @@ The AMD64 toolchain baseline measured **0.956 GB** uncompressed before the role-
 
 | Date/context | Decision and reasoning |
 |---|---|
+| 2026-10-22 recipe reviewability | Keep role configuration in `recipe.yaml`, instructions in `instructions.md` and the task prompt in `prompt.md`, using native Goose includes. |
 | 2026-10-22 role images | Add thin planner/coder/reviewer images with distinct recipes and inherited shared tools/skills. Runtime credentials and platform permissions remain separate. [Contracts and verification](docs/role-images.md). |
 | 2026-10-22 image layout | Group Dockerfiles and recipes under `images/<role>/`, starting with the base. Keep a root build context for shared scripts; this move does not change runtime behavior. |
 | 2026-10-22 bootstrap | Review repository guidance separately from the first Dockerfile PR. |

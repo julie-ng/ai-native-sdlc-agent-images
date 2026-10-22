@@ -8,7 +8,7 @@ esac
 # The inherited smoke recipe calls this without arguments in every image.
 if [ -z "$role" ]; then
   for candidate in planner coder reviewer; do
-    if [ -e "/recipes/$candidate.yaml" ]; then
+    if [ -e "/recipes/$candidate/recipe.yaml" ]; then
       test -z "$role" || { echo 'FAIL: multiple role recipes installed' >&2; exit 1; }
       role="$candidate"
     fi
@@ -45,9 +45,9 @@ rm -rf /tmp/agent-smoke-npm-cache
 goose recipe validate /recipes/smoke-test.yaml
 for candidate in planner coder reviewer; do
   if [ "$candidate" = "$role" ]; then
-    goose recipe validate "/recipes/$candidate.yaml"
+    goose recipe validate "/recipes/$candidate/recipe.yaml"
   else
-    test ! -e "/recipes/$candidate.yaml"
+    test ! -e "/recipes/$candidate/recipe.yaml"
   fi
 done
 echo 'Image smoke checks passed (no model call).'

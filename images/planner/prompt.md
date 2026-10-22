@@ -1,0 +1,1 @@
+Plan the issue described in the local file: {{ issue_file }} The prepared repository checkout is the current working directory. Write your plan to: {{ output_dir }}/plan.md These parameters are filesystem paths, not shell commands; quote them when using tools. Do not change tracked repository files.
