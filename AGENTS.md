@@ -56,11 +56,22 @@ Rules for any agent working in this repository, regardless of harness or model. 
 
 ## Changes
 
-- Work on an `agent/` task branch. Never edit/commit directly on `main`, push to it or merge into it.
-- Use a separate worktree when another agent is working in the repository. Do not modify another agent's checkout or task branch; establish ownership before concurrent writes.
+### Security
+
+- Do not edit/commit directly on `main`, push to it or merge into it.
 - Creating task branches/worktrees is authorized. In the configured dev container, signed commits and normal pushes of task changes to the agent's own branch are authorized. Session-specific instructions about pushing take precedence.
+- Amends, squashes, force pushes and re-writing published history of non-protected branches is ALLOWED and encouraged, in order to keep a clean git history.
+
+**Sandbox escalation is pre-authorized for the Git operations allowed above**; use the harness approval mechanism without asking me to repeat that authorization. Branch rulesets provide additional enforcement, but do not authorize changes to protected branches or bypassing their protections.
+
+### Guidance
+
+- Fetch the remote default branch before creating a task branch or worktree.
+- Create independent task branches (prefixed with `agent/`) from the fetched remote default branch, not the current checkout or another task branch.
+- Target PRs at the repository's default branch.
+- Only stack branches/PRs when explicitly requested. State the dependency before creating them.
+- After a prerequisite PR merges, retarget dependent PRs and verify their state before branch cleanup.
+- Use a separate worktree when another agent is working in the repository. Do not modify another agent's checkout or task branch; establish ownership before concurrent writes.
 - Request harness escalation for authorized operations blocked by the sandbox; repository instructions do not override harness restrictions.
 - Commit coherent completed changes at meaningful checkpoints, before handoff or switching tasks. Prefer small atomic Conventional Commits.
-- Amend/squash only the agent's own unpushed task commits when useful, preserving all task changes. Ask before force pushes, rewriting published history or other destructive actions.
-- Never delete branches outside `agent/`. Ask before deleting any `agent/` branch locally or remotely.
 - Push at review-ready milestones or handoff when authorized; report whether work is uncommitted, committed locally or pushed. Never commit secrets.
