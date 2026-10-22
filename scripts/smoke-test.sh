@@ -19,7 +19,6 @@ npm --version
 tsc --version
 tsx --version
 gh --version
-glab --version
 jq --version
 rg --version
 git --version

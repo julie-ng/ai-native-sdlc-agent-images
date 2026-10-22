@@ -16,7 +16,8 @@ Rules for any agent working in this repository, regardless of harness or model. 
 - Shared base first; later role images inherit from it and differ in baked skills and labels. Do not invent role contents or implement them unasked.
 - Cloud runtime: Goose calls model providers; no Claude Code, Codex CLI or ACP adapters added to the base.
 - Provider/model selection comes from runtime environment variables. No baked provider/model defaults or interactive configuration.
-- Current comparison target: `linux/amd64`, including when building on an ARM64 development machine. Comparison variants use `goose`, UID 1000.
+- Deployment target: `linux/amd64`, including when building on an ARM64 development machine. Runtime user: `goose`, UID 1000.
+- GitHub-only demo: use `gh`; do not add GitLab tooling.
 - Python and Node belong in the shared base; exact versions and additional tools are implementation defaults to document, not permanent architecture decisions.
 - Platform design and ADRs live in [ai-native-sdlc](https://github.com/julie-ng/ai-native-sdlc/tree/main/architecture). This repository owns image implementation and measured findings. Flag conflicts rather than silently choosing.
 - **The docs are the memory.** Record agreed changes, defaults, tradeoffs and verification limits alongside the implementation.

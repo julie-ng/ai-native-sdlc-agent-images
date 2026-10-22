@@ -1,5 +1,7 @@
 # Base-image comparison
 
+Historical comparison from commit `b244ea3124aa615305e4b9f2efe512fe7ad0b96c`, before the Node 24 upgrade and GitHub-only cleanup. The current Dockerfile only builds the accepted Goose/Debian variant; these sizes do not describe the current image. [Decision: ADR-001](../architecture/decisions/001-agent-base-image.md).
+
 2026-10-22. Docker Engine 29.8.0 / BuildKit 0.33.0, ARM64 host, AMD64 images executed through emulation. Both builds and offline checks passed.
 
 ## Method and criteria
@@ -20,7 +22,7 @@
 | Finished image, GB | 1.019 | 1.913 |
 | Installed dpkg packages | 144 | 256 |
 
-Goose variant saves **893,723,586 bytes (46.7%)** relative to Microsoft. This is a fresh equivalent-toolchain comparison; the older ARM64 spike numbers were not equivalent.
+The Goose variant saved **893,723,586 bytes (46.7%)** relative to Microsoft. This was an equivalent-toolchain comparison; the older ARM64 spike numbers were not equivalent.
 
 ## Tradeoffs
 
@@ -36,20 +38,35 @@ The Microsoft tools can help tasks compiling native dependencies. The smaller Go
 
 No cold-start, registry-transfer, native AMD64 performance, vulnerability or real-model comparison was performed. More packages do not by themselves establish a vulnerability count. No build-speed conclusion: shared BuildKit cache and parallel builds would confound it.
 
-## Reproduce Microsoft variant
+## Reproduce the historical comparison
+
+Extract the recorded source snapshot first; the current Dockerfile no longer accepts a Microsoft base override. This snapshot includes Node 22 and GitLab CLI to preserve the original conditions.
 
 ```sh
+comparison_dir="$(mktemp -d)"
+git archive b244ea3124aa615305e4b9f2efe512fe7ad0b96c | tar -x -C "$comparison_dir"
+docker build --platform linux/amd64 -t agent-base:comparison-goose "$comparison_dir"
 docker build --platform linux/amd64 \
   --build-arg BASE_IMAGE=mcr.microsoft.com/devcontainers/base:ubuntu-24.04@sha256:d94c97dd9cacf183d0a6fd12a8e87b526e9e928307674ae9c94139139c0c6eae \
-  -t agent-base:microsoft .
-docker run --rm --network none --platform linux/amd64 agent-base:microsoft sh /usr/local/bin/agent-image-smoke-test
-docker run --rm -i --network none --platform linux/amd64 agent-base:microsoft python3 - < scripts/check-runtime-config.py
+  -t agent-base:comparison-microsoft "$comparison_dir"
 ```
 
-Default Goose build/check commands: [README](../README.md). Dockerfile pins both base digests and Python/Node distribution digests. Release sources: [Goose Dockerfile](https://github.com/aaif-goose/goose/blob/v1.48.0/Dockerfile), [Microsoft base source](https://github.com/devcontainers/images/tree/main/src/base-ubuntu), [gh](https://github.com/cli/cli/releases/tag/v2.99.0), [glab](https://gitlab.com/gitlab-org/cli/-/releases/v1.124.0). These are primary sources; observed image behavior, not current documentation alone, determines the results above.
+Run the checks from that snapshot against each tag. Exact byte-for-byte reproduction is not guaranteed: OS repositories and transitive dependencies were not snapshot-locked.
+
+Source images and versions are pinned in the snapshot. Primary sources: [Goose Dockerfile](https://github.com/aaif-goose/goose/blob/v1.48.0/Dockerfile), [Microsoft base source](https://github.com/devcontainers/images/tree/main/src/base-ubuntu), [gh](https://github.com/cli/cli/releases/tag/v2.99.0). Observed image behavior, not current documentation alone, determines the results above.
+
+## Current Goose/Debian build
+
+After accepting Goose/Debian, upgrading to Node 24.22.1 (npm 11.19.1), removing GitLab CLI and deleting Microsoft-specific build paths:
+
+- AMD64 `agent-base:dev`: **956,107,246 bytes** (0.956 GB), using the same uncompressed size method.
+- Offline toolchain and runtime-only configuration checks passed under AMD64 emulation on ARM64.
+- Confirmed Debian 12, Node/npm versions and absence of `glab`.
+- No new Microsoft image was built with this toolchain; do not reuse 46.7% as a comparison of the current image.
 
 ## Decision log
 
 | Date/context | Decision and reasoning |
 |---|---|
-| 2026-10-22 | Default to the Goose variant for review: the agreed tools and offline runtime checks passed, with a 46.7% size saving. Retain the Microsoft build option and explicitly record its additional tools. No images published. |
+| 2026-10-22 | Default to the Goose variant for review: the agreed tools and offline runtime checks passed, with a 46.7% size saving. The comparison snapshot records the Microsoft build option and its additional tools. No images published. |
+| 2026-10-22 architect review | Accept Goose/Debian and remove Microsoft-specific code from the current Dockerfile. Preserve comparison reproduction through its source commit; upgrade Node to LTS and remove GitLab from the current image. |

@@ -1,51 +1,70 @@
 # Agent images
 
-Shared base for headless Goose agents in the [AI-native SDLC platform](https://github.com/julie-ng/ai-native-sdlc). Role images are later work. Contributors: read [AGENTS.md](AGENTS.md).
+Shared base for headless Goose agents in the [AI-native SDLC platform](https://github.com/julie-ng/ai-native-sdlc). Contributors: read [AGENTS.md](AGENTS.md).
 
-Image name: **`agent-base`**. Registry/organization prefix and publishing workflow remain to be chosen; no images have been published by this work.
-
-- Default: official Goose base. [Measured comparison](docs/base-comparison.md): 1.019 GB versus 1.913 GB on Microsoft Ubuntu, AMD64.
-- Runtime: `goose`, UID/GID 1000, `/home/goose`, working directory `/workspace`; no usable sudo.
-- Tools: Goose, Python/venv/uv, Node/npm/TypeScript/tsx, git, GPG, curl, jq, ripgrep, gh and glab.
-- No Claude Code, Codex CLI, ACP adapters, baked skills, cloud CLIs, or Docker daemon added.
-- Provider/model selection and secrets arrive at runtime. No baked `config.yaml` or automatic model invocation. Default command: `bash`; inherited entrypoint reset.
+- **Image:** `agent-base`; registry/organization prefix and publishing workflow remain to be chosen.
+- **Base:** official Goose on Debian 12. [ADR-001](architecture/decisions/001-agent-base-image.md) records the choice and historical size comparison.
+- **Target:** `linux/amd64`; development hosts may be ARM64.
+- **Runtime:** `goose`, UID/GID 1000; home `/home/goose`; working directory `/workspace`; no usable sudo.
+- **Configuration:** provider/model and secrets arrive at runtime. No baked `config.yaml` or automatic model invocation.
+- **Default command:** `bash`, with the inherited Goose entrypoint reset.
+- **Demo scope:** GitHub only. Role images and skills are later work; no images published yet.
 
 ## Build and check
 
 ```sh
-docker build --platform linux/amd64 -t agent-base:goose .
-docker run --rm --network none --platform linux/amd64 agent-base:goose sh /usr/local/bin/agent-image-smoke-test
-docker run --rm -i --network none --platform linux/amd64 agent-base:goose python3 - < scripts/check-runtime-config.py
+docker build --platform linux/amd64 -t agent-base:dev .
+docker run --rm --network none --platform linux/amd64 agent-base:dev sh /usr/local/bin/agent-image-smoke-test
+docker run --rm -i --network none --platform linux/amd64 agent-base:dev python3 - < scripts/check-runtime-config.py
 ```
 
-The second check uses a loopback mock API with a synthetic key. It verifies routing from environment variables without a config file, not real-model behavior or gateway authentication.
+- The first check exercises the toolchain, runtime permissions and recipe validation.
+- The second uses a loopback mock API with a synthetic key. It verifies environment-only provider/model routing without a config file.
+- Neither check makes real-model calls or verifies gateway authentication.
 
-For a real task, supply `GOOSE_PROVIDER`, `GOOSE_MODEL`, and the chosen provider's runtime authentication. Run `goose run --recipe /recipes/smoke-test.yaml` for the optional model-backed smoke recipe. That invocation makes model calls; it is not part of the offline checks. No real-model call has been run for this comparison.
+For a real task:
 
-The image does not implement secret-file delivery, Git authentication/identity setup, signing-key delivery, token-broker integration, or Kubernetes execution. Those are runtime/platform work. Repository cloning must arrange writable files and set the process working directory to the cloned repository.
+- Supply `GOOSE_PROVIDER`, `GOOSE_MODEL`, and the chosen provider's runtime authentication.
+- Run `goose run --recipe /recipes/smoke-test.yaml` for the optional model-backed smoke recipe. It makes model calls and is separate from the offline checks.
+- Clone the repository with writable files and set the process working directory to that checkout.
+
+Runtime/platform work remains:
+
+- Secret-file delivery and Git authentication/identity setup.
+- Signing-key delivery and token-broker integration.
+- Kubernetes execution and real-model integration checks.
 
 ## Build defaults
 
-| Component | Version |
-|---|---|
-| Goose | 1.48.0 |
-| Python | 3.12.12 |
-| uv | 0.9.4 |
-| Node / npm | 22.20.0 / 10.9.3 |
-| TypeScript / tsx | 5.9.3 / 4.20.6 |
-| gh / glab | 2.99.0 / 1.124.0 |
+| Component | Version | Description |
+|---|---|---|
+| Goose | 1.48.0 | Headless agent runtime; inherited from the pinned upstream image. |
+| Python | 3.12.12 | Python tasks and virtual environments via `venv`. |
+| uv | 0.9.4 | Python package and environment tooling. |
+| Node | 24.22.1 | Latest LTS verified on 2026-10-22; JavaScript runtime. |
+| npm / npx | 11.19.1 | Bundled Node package manager and package runner. |
+| TypeScript | 5.9.3 | TypeScript compiler (`tsc`). |
+| tsx | 4.20.6 | Run TypeScript files directly. |
+| gh | 2.99.0 | GitHub CLI for issues, pull requests and API access. |
 
-These are comparison defaults, not a claim of latest or security-approved versions. Goose follows the historical spike; Python 3.12 and Node 22 are initial choices, customizable later. Python and Node are copied from pinned official distribution images so both variants have the same versions. Python shared-library imports and venv creation passed on both distributions; this is not exhaustive cross-distribution compatibility testing.
+Version and build notes:
 
-Base/source images are digest-pinned. Debian/Ubuntu package repositories and transitive pip/npm dependencies are not snapshot-locked; release downloads are version-pinned but not checksum-verified. Builds are not fully reproducible. The build-context allowlist excludes Git metadata, credentials, handoffs and unrelated local files; it does not prove the absence of secrets in upstream images.
+- Node follows the [latest LTS release](https://nodejs.org/en/about/previous-releases), pinned to a concrete version and image digest; [official release index](https://nodejs.org/dist/index.json). Upgrade deliberately rather than floating with each build.
+- Goose follows the historical spike. Python 3.12 and the other tool versions are initial defaults, customizable later; no claim that every component is the latest or security-approved version.
+- Python and Node come from pinned official distribution images. System tools include git, GPG, curl, jq and ripgrep from Debian packages.
+- Source images are digest-pinned. Debian repositories and transitive pip/npm dependencies are not snapshot-locked; release archives are version-pinned but not checksum-verified. Builds are not fully reproducible.
+- The build-context allowlist excludes Git metadata, credentials, handoffs and unrelated local files. It does not audit upstream images.
+
+The current AMD64 image measures **0.956 GB** uncompressed. Build measurements and their limits are in [the comparison report](docs/base-comparison.md). The historical 46.7% comparison predates Node 24 and GitLab removal.
 
 ## Decision log
 
 | Date/context | Decision and reasoning |
 |---|---|
-| 2026-10-22 bootstrap | Keep repository setup separate from the first Dockerfile PR so guidance and implementation can be reviewed independently. |
-| 2026-10-22 image contract | Name the shared image `agent-base`; keep the project prefix in the registry/organization namespace. |
-| 2026-10-22 comparison | Same Goose binary, Python/Node distributions, tool installation and smoke checks on both bases; isolate the base-image choice from different Goose installation methods. |
-| 2026-10-22 architect agreement | `goose`, UID 1000, for both test variants; deployment target AMD64. Runtime environment variables select provider/model; no additional coding harness CLIs. |
-| 2026-10-22 implementation defaults | Python 3.12 with venv/uv, Node 22 with TypeScript/tsx, gh/glab and GPG. GPG supports the documented runtime signing design; keys are not baked. Role skill selection and task recipes remain deferred; ship only an optional smoke recipe. |
-| 2026-10-22 result | Keep Goose as the default: measured final AMD64 image is 46.7% smaller. Microsoft comparison remains reproducible with a base build argument; production choice remains subject to architect review. |
+| 2026-10-22 bootstrap | Review repository guidance separately from the first Dockerfile PR. |
+| 2026-10-22 image contract | Name the image `agent-base`; keep the project prefix in the registry/organization namespace. |
+| 2026-10-22 runtime | `goose`, UID 1000, on AMD64; environment variables select provider/model. Goose calls model providers without additional coding harness CLIs. |
+| 2026-10-22 base accepted | Use official Goose/Debian; remove Microsoft-specific build paths. [ADR-001](architecture/decisions/001-agent-base-image.md) preserves the comparison and tradeoffs. |
+| 2026-10-22 Node LTS | Upgrade Node 22 to the latest verified LTS, 24.22.1, with bundled npm 11.19.1; pin the image digest. |
+| 2026-10-22 GitHub-only demo | Remove GitLab CLI from installation and smoke checks; this demo only needs GitHub. |
+| 2026-10-22 remaining defaults | Python 3.12 with venv/uv, TypeScript/tsx and GPG. Keys arrive at runtime. Role skills/task recipes are deferred; ship only an optional smoke recipe. |
