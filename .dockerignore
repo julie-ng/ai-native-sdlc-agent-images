@@ -1,7 +1,9 @@
 **
-!Dockerfile
+!images/
+!images/base/
+!images/base/Dockerfile
+!images/base/recipes/
+!images/base/recipes/smoke-test.yaml
 !scripts/
 !scripts/install-tools.sh
 !scripts/smoke-test.sh
-!recipes/
-!recipes/smoke-test.yaml

@@ -26,7 +26,7 @@ RUN set -eu; \
       /home/goose/.local/state/goose/logs /home/goose/.local/share/goose; \
     chown -R goose:goose /workspace /home/goose
 
-COPY --chown=goose:goose recipes/ /recipes/
+COPY --chown=goose:goose images/base/recipes/ /recipes/
 COPY scripts/smoke-test.sh /usr/local/bin/agent-image-smoke-test
 USER goose
 WORKDIR /workspace

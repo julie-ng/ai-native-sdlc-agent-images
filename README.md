@@ -13,7 +13,7 @@ Shared base for headless Goose agents in the [AI-native SDLC platform](https://g
 ## Build and check
 
 ```sh
-docker build --platform linux/amd64 -t agent-base:dev .
+docker build --platform linux/amd64 -f images/base/Dockerfile -t agent-base:dev .
 docker run --rm --network none --platform linux/amd64 agent-base:dev sh /usr/local/bin/agent-image-smoke-test
 docker run --rm -i --network none --platform linux/amd64 agent-base:dev python3 - < scripts/check-runtime-config.py
 ```
@@ -21,6 +21,7 @@ docker run --rm -i --network none --platform linux/amd64 agent-base:dev python3 
 - The first check exercises the toolchain, runtime permissions and recipe validation.
 - The second uses a loopback mock API with a synthetic key. It verifies environment-only provider/model routing without a config file.
 - Neither check makes real-model calls or verifies gateway authentication.
+- All builds use the repository root as their build context. The base Dockerfile and smoke recipe live together under `images/base/`; installation and check scripts remain shared under `scripts/`.
 
 For a real task:
 
@@ -61,6 +62,7 @@ The current AMD64 image measures **0.956 GB** uncompressed. Build measurements a
 
 | Date/context | Decision and reasoning |
 |---|---|
+| 2026-10-22 image layout | Group Dockerfiles and recipes under `images/<role>/`, starting with the base. Keep a root build context for shared scripts; this move does not change runtime behavior. |
 | 2026-10-22 bootstrap | Review repository guidance separately from the first Dockerfile PR. |
 | 2026-10-22 image contract | Name the image `agent-base`; keep the project prefix in the registry/organization namespace. |
 | 2026-10-22 runtime | `goose`, UID 1000, on AMD64; environment variables select provider/model. Goose calls model providers without additional coding harness CLIs. |
