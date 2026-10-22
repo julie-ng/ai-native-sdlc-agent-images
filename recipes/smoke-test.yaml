@@ -1,0 +1,12 @@
+version: "1.0.0"
+title: "Base image smoke test"
+description: "Optional model-backed check of tool execution. Requires runtime provider, model and credentials."
+prompt: |
+  Run HEADLESS; no human can answer questions. Execute
+  `sh /usr/local/bin/agent-image-smoke-test` and report its actual exit status
+  and output. Do not modify the workspace. Report any failure honestly.
+extensions:
+  - type: builtin
+    name: developer
+settings:
+  max_turns: 5

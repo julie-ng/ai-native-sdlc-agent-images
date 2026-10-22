@@ -1,0 +1,7 @@
+**
+!Dockerfile
+!scripts/
+!scripts/install-tools.sh
+!scripts/smoke-test.sh
+!recipes/
+!recipes/smoke-test.yaml
