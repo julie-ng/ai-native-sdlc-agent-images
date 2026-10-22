@@ -1,14 +1,15 @@
 # Agent images
 
-Shared base for headless Goose agents in the [AI-native SDLC platform](https://github.com/julie-ng/ai-native-sdlc). Contributors: read [AGENTS.md](AGENTS.md).
+Images for headless Goose agents in the [AI-native SDLC platform](https://github.com/julie-ng/ai-native-sdlc). Contributors: read [AGENTS.md](AGENTS.md).
 
 - **Image:** `agent-base`; registry/organization prefix and publishing workflow remain to be chosen.
+- **Role images:** `agent-planner`, `agent-coder`, `agent-reviewer`; each inherits the base and adds its own Goose recipe and labels. [Builds, contracts and checks](docs/role-images.md).
 - **Base:** official Goose on Debian 12. [ADR-001](architecture/decisions/001-agent-base-image.md) records the choice and historical size comparison.
 - **Target:** `linux/amd64`; development hosts may be ARM64.
 - **Runtime:** `goose`, UID/GID 1000; home `/home/goose`; working directory `/workspace`; no usable sudo.
 - **Configuration:** provider/model and secrets arrive at runtime. No baked `config.yaml` or automatic model invocation.
 - **Default command:** `bash`, with the inherited Goose entrypoint reset.
-- **Demo scope:** GitHub only. Role images and skills are later work; no images published yet.
+- **Demo scope:** GitHub only. Role recipes are packaged; additional skills and platform integration remain later work. No images published yet.
 
 ## Build and check
 
@@ -27,7 +28,7 @@ For a real task:
 
 - Supply `GOOSE_PROVIDER`, `GOOSE_MODEL`, and the chosen provider's runtime authentication.
 - Run `goose run --recipe /recipes/smoke-test.yaml` for the optional model-backed smoke recipe. It makes model calls and is separate from the offline checks.
-- Clone the repository with writable files and set the process working directory to that checkout.
+- Prepare a writable checkout and set the process working directory to it. For role tasks, use the corresponding image and its [recipe inputs](docs/role-images.md#recipe-contracts).
 
 Runtime/platform work remains:
 
@@ -56,12 +57,13 @@ Version and build notes:
 - Source images are digest-pinned. Debian repositories and transitive pip/npm dependencies are not snapshot-locked; release archives are version-pinned but not checksum-verified. Builds are not fully reproducible.
 - The build-context allowlist excludes Git metadata, credentials, handoffs and unrelated local files. It does not audit upstream images.
 
-The current AMD64 image measures **0.956 GB** uncompressed. Build measurements and their limits are in [the comparison report](docs/base-comparison.md). The historical 46.7% comparison predates Node 24 and GitLab removal.
+The AMD64 toolchain baseline measured **0.956 GB** uncompressed before the role-image restructure. Build measurements and their limits are in [the comparison report](docs/base-comparison.md). The historical 46.7% comparison predates Node 24 and GitLab removal.
 
 ## Decision log
 
 | Date/context | Decision and reasoning |
 |---|---|
+| 2026-10-22 role images | Add thin planner/coder/reviewer images with distinct recipes and inherited shared tools/skills. Runtime credentials and platform permissions remain separate. [Contracts and verification](docs/role-images.md). |
 | 2026-10-22 image layout | Group Dockerfiles and recipes under `images/<role>/`, starting with the base. Keep a root build context for shared scripts; this move does not change runtime behavior. |
 | 2026-10-22 bootstrap | Review repository guidance separately from the first Dockerfile PR. |
 | 2026-10-22 image contract | Name the image `agent-base`; keep the project prefix in the registry/organization namespace. |

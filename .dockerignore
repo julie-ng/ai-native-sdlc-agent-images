@@ -4,6 +4,15 @@
 !images/base/Dockerfile
 !images/base/recipes/
 !images/base/recipes/smoke-test.yaml
+!images/planner/
+!images/planner/Dockerfile
+!images/planner/recipe.yaml
+!images/coder/
+!images/coder/Dockerfile
+!images/coder/recipe.yaml
+!images/reviewer/
+!images/reviewer/Dockerfile
+!images/reviewer/recipe.yaml
 !scripts/
 !scripts/install-tools.sh
 !scripts/smoke-test.sh

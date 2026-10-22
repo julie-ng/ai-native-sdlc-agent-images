@@ -1,5 +1,19 @@
 #!/bin/sh
 set -eu
+role="${1:-}"
+case "$role" in
+  ''|planner|coder|reviewer) ;;
+  *) echo 'Usage: agent-image-smoke-test [planner|coder|reviewer]' >&2; exit 2 ;;
+esac
+# The inherited smoke recipe calls this without arguments in every image.
+if [ -z "$role" ]; then
+  for candidate in planner coder reviewer; do
+    if [ -e "/recipes/$candidate.yaml" ]; then
+      test -z "$role" || { echo 'FAIL: multiple role recipes installed' >&2; exit 1; }
+      role="$candidate"
+    fi
+  done
+fi
 test "$(id -un)" = goose
 test "$(id -u)" = 1000
 test -w /workspace
@@ -29,4 +43,11 @@ rm -rf /tmp/agent-smoke-venv
 npm --cache /tmp/agent-smoke-npm-cache cache verify
 rm -rf /tmp/agent-smoke-npm-cache
 goose recipe validate /recipes/smoke-test.yaml
+for candidate in planner coder reviewer; do
+  if [ "$candidate" = "$role" ]; then
+    goose recipe validate "/recipes/$candidate.yaml"
+  else
+    test ! -e "/recipes/$candidate.yaml"
+  fi
+done
 echo 'Image smoke checks passed (no model call).'

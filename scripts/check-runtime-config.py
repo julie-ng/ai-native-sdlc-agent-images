@@ -1,13 +1,24 @@
 """Offline provider/model routing check, not a real-model integration test.
 
-Run inside either image with --network none and Python on stdin. The loopback
+Run inside an image with --network none and Python on stdin. The loopback
 server accepts only a synthetic key and asserts the runtime-selected model.
+Optional recipe parameters and expected prompt fragments check recipe rendering;
+the mock does not execute tools or produce the role's artifacts.
 """
+import argparse
 import http.server
 import json
 import os
 import subprocess
 import threading
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--recipe", help="Baked recipe to run instead of the text prompt")
+parser.add_argument("--params", action="append", default=[], help="Recipe key=value, repeatable")
+parser.add_argument("--expect-prompt", action="append", default=[], help="Expected rendered text, repeatable")
+args = parser.parse_args()
+if args.params and not args.recipe:
+    parser.error("--params requires --recipe")
 
 requests = []
 
@@ -51,8 +62,15 @@ env = dict(os.environ, GOOSE_PROVIDER="openai", GOOSE_MODEL="offline-test-model"
            OPENAI_HOST=f"http://127.0.0.1:{server.server_port}",
            GOOSE_TELEMETRY_ENABLED="false", GOOSE_MODE="auto")
 try:
+    command = ["goose", "run", "--max-turns", "1"]
+    if args.recipe:
+        command.extend(["--recipe", args.recipe])
+        for param in args.params:
+            command.extend(["--params", param])
+    else:
+        command.extend(["--text", "Reply RUNTIME_CONFIG_OK"])
     result = subprocess.run(
-        ["goose", "run", "--text", "Reply RUNTIME_CONFIG_OK", "--max-turns", "1"],
+        command,
         env=env, text=True, capture_output=True, timeout=60,
     )
     print(result.stdout)
@@ -63,7 +81,12 @@ try:
         assert path == "/v1/chat/completions", path
         assert auth == "Bearer offline-synthetic-key"
         assert body["model"] == "offline-test-model", body["model"]
+        messages = json.dumps(body["messages"])
+        for fragment in args.expect_prompt:
+            assert fragment in messages, f"missing rendered prompt fragment: {fragment}"
     assert "RUNTIME_CONFIG_OK" in result.stdout
     print("Runtime-only provider/model routing: PASS (offline mock; no real model).")
+    if args.recipe:
+        print("Recipe rendering: PASS (mock did not execute tools or verify task completion).")
 finally:
     server.shutdown()
