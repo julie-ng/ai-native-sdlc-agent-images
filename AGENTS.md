@@ -36,12 +36,6 @@ Project-specific instructions for any agent working in this repository, alongsid
 
 - Codex commits include `Co-Authored-By: Codex <version> <model> <codex@users.noreply.github.com>`, for example `Co-Authored-By: Codex 6.1 Sol <codex@users.noreply.github.com>`. Keep the configured agent as author. Other model co-author trailers should include model name and version.
 
-## History rewriting — review needed
-
-The existing rule below does not limit branch ownership; the shared workflow grants rewriting for the agent’s own task branches. This scope difference needs review before it is treated as a project exception.
-
-- Amends, squashes, force pushes and re-writing published history of non-protected branches is ALLOWED and encouraged, in order to keep a clean git history.
-
 ## Shared instructions
 
 Read and follow these alongside this repo’s project-specific instructions. Explicit project-specific exceptions override shared defaults; otherwise both apply.
