@@ -1,0 +1,49 @@
+name: Publish agent image
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-agent-base
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # Manual dispatch can select other refs; publishing is restricted to main.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AZURE_ACR_NAME: ${{ vars.AZURE_ACR_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build AMD64 image
+        run: docker build --platform linux/amd64 -t agent-base:check .
+      - name: Check runtime
+        run: |
+          docker run --rm --network none --platform linux/amd64 agent-base:check sh /usr/local/bin/agent-image-smoke-test
+          docker run --rm -i --network none --platform linux/amd64 agent-base:check python3 - < scripts/check-runtime-config.py
+      - name: Sign in to Azure with OIDC
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Push image
+        shell: bash
+        run: |
+          set -euo pipefail
+          az acr login --name "$AZURE_ACR_NAME"
+          image="$AZURE_ACR_NAME.azurecr.io/agent-base"
+          docker tag agent-base:check "$image:sha-$GITHUB_SHA"
+          docker tag agent-base:check "$image:latest"
+          docker push "$image:sha-$GITHUB_SHA"
+          docker push "$image:latest"

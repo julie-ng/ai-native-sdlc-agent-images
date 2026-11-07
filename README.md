@@ -68,3 +68,7 @@ The current AMD64 image measures **0.956 GB** uncompressed. Build measurements a
 | 2026-10-22 Node LTS | Upgrade Node 22 to the latest verified LTS, 24.22.1, with bundled npm 11.19.1; pin the image digest. |
 | 2026-10-22 GitHub-only demo | Remove GitLab CLI from installation and smoke checks; this demo only needs GitHub. |
 | 2026-10-22 remaining defaults | Python 3.12 with venv/uv, TypeScript/tsx and GPG. Keys arrive at runtime. Role skills/task recipes are deferred; ship only an optional smoke recipe. |
+
+## Publishing
+
+Images are published to Azure Container Registry when changes are pushed to `main`.
