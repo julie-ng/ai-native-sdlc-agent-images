@@ -29,5 +29,4 @@ rm -rf /tmp/agent-smoke-venv
 npm --cache /tmp/agent-smoke-npm-cache cache verify
 rm -rf /tmp/agent-smoke-npm-cache
 goose recipe validate /recipes/smoke-test.yaml
-sh /usr/local/bin/agent-entrypoint-check
 echo 'Image smoke checks passed (no model call).'

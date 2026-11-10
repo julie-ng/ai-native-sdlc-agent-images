@@ -16,11 +16,13 @@ Shared base for headless Goose agents in the [AI-native SDLC platform](https://g
 docker build --platform linux/amd64 -t agent-base:dev .
 docker run --rm --network none --platform linux/amd64 agent-base:dev sh /usr/local/bin/agent-image-smoke-test
 docker run --rm -i --network none --platform linux/amd64 agent-base:dev python3 - < scripts/check-runtime-config.py
+docker run --rm -i --network none --platform linux/amd64 agent-base:dev sh -s < scripts/check-entrypoint.sh
 ```
 
 - The first check exercises the toolchain, runtime permissions and recipe validation.
 - The second uses a loopback mock API with a synthetic key. It verifies environment-only provider/model routing without a config file.
-- Neither check makes real-model calls or verifies gateway authentication.
+- The third checks runtime secret loading and commit signing with fake credentials.
+- These checks make no real-model calls and do not verify gateway authentication.
 
 For a real task:
 
@@ -85,6 +87,6 @@ The entrypoint reads optional files from `AGENT_SECRETS_DIR` (default `/mnt/agen
 
 The workflow supplies `GIT_USER_NAME` and `GIT_USER_EMAIL`; each nonempty value sets the corresponding global Git identity. `$HOME` must be writable. Provider/model selection remains in `GOOSE_PROVIDER` and `GOOSE_MODEL`. Secrets and signing state are runtime-only; do not persist the runtime home into an image.
 
-The existing smoke check also exercises missing secrets, environment preservation, fake mounted credentials, a generated throwaway signing key and a verified signed commit, with networking disabled. It does not verify CSI delivery or real GitHub authentication.
+CI runs the entrypoint check from the checkout via stdin; it exercises missing secrets, environment preservation, fake mounted credentials, a generated throwaway signing key and a verified signed commit, with networking disabled. It does not verify CSI delivery or real GitHub authentication.
 
 Local verification (2026-11-10): AMD64 build, entrypoint signing check, default shell/UID and offline provider routing passed on an ARM64 host. The full smoke check stopped at `uv --version` with a QEMU signal 11; native AMD64 CI validation remains unverified.

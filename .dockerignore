@@ -4,6 +4,5 @@
 !scripts/install-tools.sh
 !scripts/smoke-test.sh
 !scripts/agent-entrypoint.sh
-!scripts/check-entrypoint.sh
 !recipes/
 !recipes/smoke-test.yaml

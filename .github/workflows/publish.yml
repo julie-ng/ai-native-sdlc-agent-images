@@ -31,6 +31,7 @@ jobs:
         run: |
           docker run --rm --network none --platform linux/amd64 agent-base:check sh /usr/local/bin/agent-image-smoke-test
           docker run --rm -i --network none --platform linux/amd64 agent-base:check python3 - < scripts/check-runtime-config.py
+          docker run --rm -i --network none --platform linux/amd64 agent-base:check sh -s < scripts/check-entrypoint.sh
       - name: Sign in to Azure with OIDC
         uses: azure/login@v3
         with:
