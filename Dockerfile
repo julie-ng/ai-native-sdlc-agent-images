@@ -27,9 +27,11 @@ RUN set -eu; \
     chown -R goose:goose /workspace /home/goose
 
 COPY --chown=goose:goose recipes/ /recipes/
+COPY scripts/check-entrypoint.sh /usr/local/bin/agent-entrypoint-check
 COPY scripts/smoke-test.sh /usr/local/bin/agent-image-smoke-test
-USER goose
+COPY --chmod=755 scripts/agent-entrypoint.sh /usr/local/bin/agent-entrypoint
 WORKDIR /workspace
+USER goose
 # No provider, model, or credential defaults. Select these at runtime.
-ENTRYPOINT []
+ENTRYPOINT ["/usr/local/bin/agent-entrypoint"]
 CMD ["bash"]
