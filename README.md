@@ -7,7 +7,7 @@ Shared base for headless Goose agents in the [AI-native SDLC platform](https://g
 - **Target:** `linux/amd64`; development hosts may be ARM64.
 - **Runtime:** `goose`, UID/GID 1000; home `/home/goose`; working directory `/workspace`; no usable sudo.
 - **Configuration:** provider/model and secrets arrive at runtime. No baked `config.yaml` or automatic model invocation.
-- **Default command:** `bash`, with the inherited Goose entrypoint reset.
+- **Default command:** `bash`, with runtime secret setup before command execution.
 - **Demo scope:** GitHub only. Role images and skills are later work; no images published yet.
 
 ## Build and check
@@ -16,11 +16,13 @@ Shared base for headless Goose agents in the [AI-native SDLC platform](https://g
 docker build --platform linux/amd64 -t agent-base:dev .
 docker run --rm --network none --platform linux/amd64 agent-base:dev sh /usr/local/bin/agent-image-smoke-test
 docker run --rm -i --network none --platform linux/amd64 agent-base:dev python3 - < scripts/check-runtime-config.py
+docker run --rm -i --network none --platform linux/amd64 agent-base:dev sh -s < scripts/check-entrypoint.sh
 ```
 
 - The first check exercises the toolchain, runtime permissions and recipe validation.
 - The second uses a loopback mock API with a synthetic key. It verifies environment-only provider/model routing without a config file.
-- Neither check makes real-model calls or verifies gateway authentication.
+- The third checks runtime secret loading and commit signing with fake credentials.
+- These checks make no real-model calls and do not verify gateway authentication.
 
 For a real task:
 
@@ -30,8 +32,7 @@ For a real task:
 
 Runtime/platform work remains:
 
-- Secret-file delivery and Git authentication/identity setup.
-- Signing-key delivery and token-broker integration.
+- CSI secret delivery and token-broker integration.
 - Kubernetes execution and real-model integration checks.
 
 ## Build defaults
@@ -68,7 +69,24 @@ The current AMD64 image measures **0.956 GB** uncompressed. Build measurements a
 | 2026-10-22 Node LTS | Upgrade Node 22 to the latest verified LTS, 24.22.1, with bundled npm 11.19.1; pin the image digest. |
 | 2026-10-22 GitHub-only demo | Remove GitLab CLI from installation and smoke checks; this demo only needs GitHub. |
 | 2026-10-22 remaining defaults | Python 3.12 with venv/uv, TypeScript/tsx and GPG. Keys arrive at runtime. Role skills/task recipes are deferred; ship only an optional smoke recipe. |
+| 2026-11-10 issue #7 | Load optional CSI files at startup; keep credentials out of image layers and use a fresh private GPG home to select only the mounted signing key. |
 
 ## Publishing
 
 Images are published to Azure Container Registry when changes are pushed to `main`.
+
+## Runtime secrets and Git setup
+
+The entrypoint reads optional files from `AGENT_SECRETS_DIR` (default `/mnt/agent-secrets`) as `goose`, then executes the supplied command. With no files or identity variables, it starts `bash` as before. Mounted files override corresponding environment values; absent files leave them unchanged.
+
+| File | Runtime setup |
+|---|---|
+| `vercel-ai-gateway-api-key` | Exports `AI_GATEWAY_API_KEY`. |
+| `julieio-goose-github-pat` | Exports `GH_TOKEN`; configures the GitHub HTTPS credential helper without storing the token. |
+| `agent-gpg-private-key` | Imports an unencrypted ASCII-armored private key into a fresh private `GNUPGHOME` under `$HOME`; sets global Git signing fingerprint and enables commit signing. Invalid keys fail startup. |
+
+The workflow supplies `GIT_USER_NAME` and `GIT_USER_EMAIL`; each nonempty value sets the corresponding global Git identity. `$HOME` must be writable. Provider/model selection remains in `GOOSE_PROVIDER` and `GOOSE_MODEL`. Secrets and signing state are runtime-only; do not persist the runtime home into an image.
+
+CI runs the entrypoint check from the checkout via stdin; it exercises missing secrets, environment preservation, fake mounted credentials, a generated throwaway signing key and a verified signed commit, with networking disabled. It does not verify CSI delivery or real GitHub authentication.
+
+Local verification (2026-11-10): AMD64 build, entrypoint signing check, default shell/UID and offline provider routing passed on an ARM64 host. The full smoke check stopped at `uv --version` with a QEMU signal 11; native AMD64 CI validation remains unverified.
